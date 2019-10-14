@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 {
 	key_t 			ShmKEY;
 	pid_t 			pid = getpid();
-	int			ShmID, i;
+	int			ShmID, i, left = 0, right = N -1;
 	struct Memory *ShmPTR;
 	int a[N] = {9, 8, 7, 6, 5, 4, 3, 2};
 		
@@ -39,13 +39,14 @@ int main(int argc, char *argv[])
 		printf("a[%d]: %d\n", i, a[i]);
 	}
 
-      ShmKEY = ftok("./", 'x');
-	printf("Value of ShmKEY: %d\n", ShmKEY);
-	if ((ShmID = shmget(ShmKEY, sizeof(struct Memory), 0666)) < 0) {
+        ShmKEY = ftok("./", 'a');
+
+	if ((ShmID = shmget(ShmKEY, sizeof(struct Memory), IPC_CREAT | 0666)) < 0) {
 		int error = errno;
-		printf("shmget() failed.\nerrno: %d\n", error);
+		printf("shmid = %d\nshmget() failed.\nerrno: %d\n", ShmID, error);
 	    	return 0;
 	}
+
 	printf("Shared memory obtained\n");
 	ShmPTR = (struct Memory *) shmat(ShmID, NULL, 0);
 	if((int) ShmPTR == -1)
@@ -56,11 +57,14 @@ int main(int argc, char *argv[])
 	}
 
 	printf("Shared memory attached\n");
-	printf("Shared memory key = %ld\n", ShmKEY);
+	printf("Share2d memory key = %ld\n", ShmKEY);
 	printf("Shared memory ID = %ld\n", ShmID);
 	printf("My PID = %ld\n", pid);
 	
-
+	if(fork() > 0)
+		wait(NULL);
+	else
+		execvp("./merge", left, right);
 
 
 }
