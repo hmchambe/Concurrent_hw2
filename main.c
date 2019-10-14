@@ -30,14 +30,10 @@ int main(int argc, char *argv[])
 {
 	key_t 			ShmKEY;
 	pid_t 			pid = getpid();
-	int			ShmID, i, left = 0, right = N -1;
+	int			ShmID, i;
+	int			edges[2] = {0, N - 1};
 	struct Memory *ShmPTR;
 	int a[N] = {9, 8, 7, 6, 5, 4, 3, 2};
-		
-	for(i=0; i<N; i++)
-	{
-		printf("a[%d]: %d\n", i, a[i]);
-	}
 
         ShmKEY = ftok("./", 'a');
 
@@ -56,15 +52,23 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+	for(i=0; i<N; i++)
+	{
+		ShmPTR->a[i] = a[i];
+		/* printf("a[%d]: %d\nShmPTR a[%d]: %d\n", i, a[i], i, (ShmPTR->a[i])); */
+	}
+
 	printf("Shared memory attached\n");
 	printf("Share2d memory key = %ld\n", ShmKEY);
 	printf("Shared memory ID = %ld\n", ShmID);
 	printf("My PID = %ld\n", pid);
+
+	
 	
 	if(fork() > 0)
 		wait(NULL);
 	else
-		execvp("./merge", left, right);
+		execvp("./merge", edges);
 
 
 }
