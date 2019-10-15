@@ -31,11 +31,11 @@ int main(int argc, char *argv[])
 	key_t 			ShmKEY;
 	pid_t 			pid = getpid();
 	int			ShmID, i;
-	int			edges[2] = {0, N - 1};
+	char *merge[] = {"./merge", 0, 7, NULL};
 	struct Memory *ShmPTR;
 	int a[N] = {9, 8, 7, 6, 5, 4, 3, 2};
 
-        ShmKEY = ftok("./", 'a');
+    ShmKEY = ftok("./", 'a');
 
 	if ((ShmID = shmget(ShmKEY, sizeof(struct Memory), IPC_CREAT | 0666)) < 0) {
 		int error = errno;
@@ -59,17 +59,16 @@ int main(int argc, char *argv[])
 	}
 
 	printf("Shared memory attached\n");
-	printf("Share2d memory key = %ld\n", ShmKEY);
-	printf("Shared memory ID = %ld\n", ShmID);
-	printf("My PID = %ld\n", pid);
+	printf("Shared memory key = %d\n", ShmKEY);
+	printf("Shared memory ID = %d\n", ShmID);
+	printf("My PID = %d\n", pid);
 
-	
-	
-	if(fork() > 0)
-		wait(NULL);
-	else
-		execvp("./merge", edges);
+	if(execvp(merge[0], merge) < 0)
+	{
+		printf("execvp() failed\nErrno: %d", errno);
+		exit(1);
 
+	}
 
 }
 
