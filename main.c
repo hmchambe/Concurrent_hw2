@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 	key_t 			ShmKEY;
 	pid_t 			pid = getpid();
 	int			ShmID, i;
-	char *merge[] = {"./merge", 0, 7, NULL};
+	char *merge[] = {"./merge", "0", "7", NULL};
 	struct Memory *ShmPTR;
 	int a[N] = {9, 8, 7, 6, 5, 4, 3, 2};
 
