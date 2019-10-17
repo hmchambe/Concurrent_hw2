@@ -29,7 +29,7 @@ struct Memory {
 int main(int argc, char *argv[])
 {
 	key_t 			ShmKEY;
-	pid_t 			pid = getpid();
+	pid_t 			pid = getpid(), forkPID;
 	int			ShmID, i;
 	char *merge[] = {"./merge", "0", "7", NULL};
 	struct Memory *ShmPTR;
@@ -63,12 +63,23 @@ int main(int argc, char *argv[])
 	printf("Shared memory ID = %d\n", ShmID);
 	printf("My PID = %d\n", pid);
 
-	if(execvp(merge[0], merge) < 0)
+
+
+	if((forkPID = fork()) == 0)
+	{ /*  CHILD execs merge  */
+		if(execvp(merge[0], merge) < 0)
+		{
+			printf("execvp() failed\nErrno: %d", errno);
+			exit(1);
+		}
+	}else if(forkPID > 0)
+	{ /* PARENT waits for child */
+		wait(NULL);
+		exit(0);
+	}else
 	{
-		printf("execvp() failed\nErrno: %d", errno);
+		printf("FORK FAILED\n");
 		exit(1);
-
 	}
-
 }
 
