@@ -28,11 +28,16 @@ void display(int *a, int size)
 {
 	int i;
 	char buf[100];
-		for(i=0; i<size; i++)
+	sprintf(buf, "Input array for mergesort has %d elements\n", size);
+	write(1, buf, strlen(buf));
+
+	for(i=0; i<size; i++)
 	{
-		sprintf(buf, "ShmPTR[%d]: %d\n", i, a[i]);
+		sprintf(buf, "   %d   ", a[i]);
 		write(1, buf, strlen(buf));
 	}
+		sprintf(buf, "\n");
+		write(1, buf, strlen(buf));
 }
 
 int main(int argc, char *argv[])
@@ -52,8 +57,10 @@ int main(int argc, char *argv[])
 
 	int correctSize = snprintf(NULL, 0, "%d", size);
 	char *shortBuf = malloc( correctSize + 1);
+	char *upperBoundBuf = malloc( correctSize + 1);
 	snprintf(shortBuf, correctSize+1, "%d", size);
-	char 			*merge[] = {"./merge", "0", shortBuf, shortBuf, NULL};
+	snprintf(upperBoundBuf, correctSize+1, "%d", size-1);
+	char *merge[] = {"./merge", "0", upperBoundBuf, shortBuf, NULL};
     ShmKEY = ftok("./", 'a');
 	if ((ShmID = shmget(ShmKEY, sizeof(int)*size, IPC_CREAT | 0666)) < 0) {
 		int error = errno;
@@ -71,7 +78,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	sprintf(buf, "*** MAIN: Shared memory key = %d\n*** MAIN: shared memory created\n*** MAIN: Shared memory attatched and ready to use\n", ShmKEY);
+	sprintf(buf, "*** MAIN: Shared memory key = %d\n*** MAIN: shared memory created\n*** MAIN: Shared memory attached and is ready to use\n", ShmKEY);
 	write(1, buf, strlen(buf));
 
 	/* read in array and store in ShmPTR */
@@ -80,7 +87,9 @@ int main(int argc, char *argv[])
 		scanf("%d", &ShmPTR[i]);
 	}
 
-
+	display(ShmPTR, size);
+	sprintf(buf, "*** MAIN: about to spawn the merge sort process\n");
+	write(1, buf, strlen(buf));
 
 	if((forkPID = fork()) == 0)
 	{ /*  CHILD execs merge  */
@@ -97,11 +106,14 @@ int main(int argc, char *argv[])
 
 
 	/* PARENT waits for child */
-	display(ShmPTR, size);
+
 	wait(NULL);
-	display(ShmPTR, size);
+	display(ShmPTR,size);
     shmdt((void *) ShmPTR);
+/* TODO Check all mallocs and make sure they are freed */
 	shmctl(ShmID, IPC_RMID, NULL); /* removes shared memory when done */
+	free(shortBuf);
+	free(upperBoundBuf);
 	sprintf(buf, "*** MAIN: shared memory successfully detached\n*** MAIN: shared memory successfully removed\n*** MAIN: exits\n");
 	write(1, buf, strlen(buf));
 	exit(0);
