@@ -11,6 +11,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
@@ -20,48 +24,61 @@
 #include <sys/shm.h>
 #include <errno.h>
 
-#define N 8
-
-struct Memory {
-	int a[8];
-};
+void display(int *a, int size)
+{
+	int i;
+	char buf[100];
+		for(i=0; i<size; i++)
+	{
+		sprintf(buf, "ShmPTR[%d]: %d\n", i, a[i]);
+		write(1, buf, strlen(buf));
+	}
+}
 
 int main(int argc, char *argv[])
 {
 	key_t 			ShmKEY;
 	pid_t 			pid = getpid(), forkPID;
-	int			ShmID, i;
-	char *merge[] = {"./merge", "0", "7", NULL};
-	struct Memory *ShmPTR;
-	int a[N] = {9, 8, 7, 6, 5, 4, 3, 2};
+	int				ShmID, i;
+	char			*upperBound;
+	int			    size;
+	char			buf[300];
+	int 			*ShmPTR;
 
+	scanf("%d", &size);
+	printf("size -> %d\n", size);
+
+
+
+	int correctSize = snprintf(NULL, 0, "%d", size);
+	char *shortBuf = malloc( correctSize + 1);
+	snprintf(shortBuf, correctSize+1, "%d", size);
+	char 			*merge[] = {"./merge", "0", shortBuf, shortBuf, NULL};
     ShmKEY = ftok("./", 'a');
-
-	if ((ShmID = shmget(ShmKEY, sizeof(struct Memory), IPC_CREAT | 0666)) < 0) {
+	if ((ShmID = shmget(ShmKEY, sizeof(int)*size, IPC_CREAT | 0666)) < 0) {
 		int error = errno;
 		printf("shmid = %d\nshmget() failed.\nerrno: %d\n", ShmID, error);
 	    	return 0;
 	}
 
-	printf("Shared memory obtained\n");
-	ShmPTR = (struct Memory *) shmat(ShmID, NULL, 0);
-	if((int) ShmPTR == -1)
+	sprintf(buf, "Merge Sort with Multiple Processes:\n");
+	write(1, buf, strlen(buf));
+	ShmPTR = shmat(ShmID, NULL, 0);
+	if(ShmPTR == (void*)-1)
 	{
 		printf("shmat() failed.\n");
 		shmctl(ShmID, IPC_RMID, NULL);	/* remove it if shmat() fails */
 		return 0;
 	}
 
-	for(i=0; i<N; i++)
-	{
-		ShmPTR->a[i] = a[i];
-		/* printf("a[%d]: %d\nShmPTR a[%d]: %d\n", i, a[i], i, (ShmPTR->a[i])); */
-	}
+	sprintf(buf, "*** MAIN: Shared memory key = %d\n*** MAIN: shared memory created\n*** MAIN: Shared memory attatched and ready to use\n", ShmKEY);
+	write(1, buf, strlen(buf));
 
-	printf("Shared memory attached\n");
-	printf("Shared memory key = %d\n", ShmKEY);
-	printf("Shared memory ID = %d\n", ShmID);
-	printf("My PID = %d\n", pid);
+	/* read in array and store in ShmPTR */
+	for(i=0; i<size; i++)
+	{
+		scanf("%d", &ShmPTR[i]);
+	}
 
 
 
@@ -72,14 +89,22 @@ int main(int argc, char *argv[])
 			printf("execvp() failed\nErrno: %d", errno);
 			exit(1);
 		}
-	}else if(forkPID > 0)
-	{ /* PARENT waits for child */
-		wait(NULL);
-		exit(0);
-	}else
+	}else if(forkPID < 0)
 	{
 		printf("FORK FAILED\n");
 		exit(1);
 	}
+
+
+	/* PARENT waits for child */
+	display(ShmPTR, size);
+	wait(NULL);
+	display(ShmPTR, size);
+    shmdt((void *) ShmPTR);
+	shmctl(ShmID, IPC_RMID, NULL); /* removes shared memory when done */
+	sprintf(buf, "*** MAIN: shared memory successfully detached\n*** MAIN: shared memory successfully removed\n*** MAIN: exits\n");
+	write(1, buf, strlen(buf));
+	exit(0);
+
 }
 
